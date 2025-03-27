@@ -26,13 +26,13 @@ public class Program
 
         app.UseAuthorization();
 
-        app.MapGet("/stream", (CancellationToken ct) =>
+        app.MapGet("/stream", (int? startId, CancellationToken ct) =>
             {
-                return Results.Ok(Generate(ct));
+                return Results.Ok(Generate(startId, ct));
 
-                static async IAsyncEnumerable<StreamItem> Generate([EnumeratorCancellation] CancellationToken ct)
+                static async IAsyncEnumerable<StreamItem> Generate(int? startId, [EnumeratorCancellation] CancellationToken ct)
                 {
-                    for (var i = 0; i < 1000; i++)
+                    for (var i = startId.GetValueOrDefault(0); i < 1000; i++)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(1000), ct);
 
