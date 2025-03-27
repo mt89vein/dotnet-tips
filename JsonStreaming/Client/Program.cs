@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,9 +11,7 @@ var httpClient = new HttpClient
     BaseAddress = new Uri("http://localhost:5192")
 };
 
-await using var responseStream = await httpClient.GetStreamAsync("/stream?startId=5");
-
-var streamItems = JsonSerializer.DeserializeAsyncEnumerable<StreamItem>(responseStream);
+var streamItems = httpClient.GetFromJsonAsAsyncEnumerable<StreamItem>("/stream?startId=5");
 
 await foreach (var streamItem in streamItems)
 {
