@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace JsonStreaming;
 
 public class Program
@@ -24,15 +26,15 @@ public class Program
 
         app.UseAuthorization();
 
-        app.MapGet("/stream", () =>
+        app.MapGet("/stream", (CancellationToken ct) =>
             {
-                return Results.Ok(Generate());
+                return Results.Ok(Generate(ct));
 
-                static async IAsyncEnumerable<StreamItem> Generate()
+                static async IAsyncEnumerable<StreamItem> Generate([EnumeratorCancellation] CancellationToken ct)
                 {
                     for (var i = 0; i < 1000; i++)
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                        await Task.Delay(TimeSpan.FromMilliseconds(1000), ct);
 
                         yield return new StreamItem(DateTimeOffset.UtcNow, i);
                     }
