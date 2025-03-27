@@ -1,0 +1,1 @@
+Details in my [channel](https://t.me/sh_dotnet/109)
