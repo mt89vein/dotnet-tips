@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    volumes:
+    - ./dev/grafana/provisioning:/etc/grafana/provisioning
+    - ./dev/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - 3000:3000
+
+  prometheus:
+      image: prom/prometheus:v2.53.4
+      volumes:
+        - ./dev/prometheus/:/etc/prometheus/
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+      ports:
+        - 9090:9090

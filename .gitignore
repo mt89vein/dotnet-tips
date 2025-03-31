@@ -330,3 +330,8 @@ ASALocalRun/
 ocelot.json
 data/
 tests/Sstv.Outbox.IntegrationTests/coverage.info
+
+
+# Unignore
+
+!/SyncDataBenchmark/artifacts/

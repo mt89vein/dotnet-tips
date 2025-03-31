@@ -122,7 +122,7 @@ dotnet_diagnostic.IDE0270.severity = none
 # If you use StyleCop, you'll need to disable SA1636: File header copyright text should match.
 # dotnet_diagnostic.SA1636.severity = none
 # Undocumented
-dotnet_style_operator_placement_when_wrapping = end_of_line:warning
+dotnet_style_operator_placement_when_wrapping = end_of_line
 csharp_style_prefer_null_check_over_type_check = true:warning
 
 csharp_style_prefer_primary_constructors = false
@@ -337,7 +337,7 @@ dotnet_naming_rule.stylecop_constant_fields_must_be_pascal_case_rule.severity   
 
 # All static readonly fields must be PascalCase
 # https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/documentation/SA1311.md
-dotnet_naming_symbols.stylecop_static_readonly_fields_group.applicable_accessibilities = public, internal, protected_internal, protected, private_protected, private
+dotnet_naming_symbols.stylecop_static_readonly_fields_group.applicable_accessibilities = public, internal, protected_internal, protected, private_protected
 dotnet_naming_symbols.stylecop_static_readonly_fields_group.required_modifiers         = static, readonly
 dotnet_naming_symbols.stylecop_static_readonly_fields_group.applicable_kinds           = field
 dotnet_naming_rule.stylecop_static_readonly_fields_must_be_pascal_case_rule.symbols    = stylecop_static_readonly_fields_group
@@ -479,9 +479,12 @@ dotnet_diagnostic.SYSLIB1045.severity = none # Use generate regex
 
 dotnet_diagnostic.CA1069.severity = error # enum value duplicates
 dotnet_diagnostic.IDE0290.severity = none # use primary constructor
-dotnet_diagnostic.CA1014.severity = none # mark assemblies as CLSCompliant
-dotnet_diagnostic.CA1515.severity = none # API application types should be internal
-dotnet_diagnostic.CA1819.severity = none # properties should not be array.
+dotnet_diagnostic.IDE0040.severity = none # interface member has no access modifier
+dotnet_diagnostic.IDE0052.severity = none # not used local variable
+dotnet_diagnostic.IDE1006.severity = none # pascal case for private static fields
+dotnet_diagnostic.CA1014.severity = none # mark assemblies as a CLSCompliant
+dotnet_diagnostic.CA1515.severity = none # mark as internal
+dotnet_diagnostic.IDE0018.severity = none # inline out var
 
 
 
@@ -512,7 +515,7 @@ csharp_max_array_initializer_elements_on_line = 0
 csharp_wrap_array_initializer_style = chop_if_long
 
 csharp_wrap_after_dot_in_method_calls = false
-csharp_wrap_chained_method_calls = chop_always
+csharp_wrap_chained_method_calls = chop_if_long
 csharp_wrap_before_first_method_call = true
 csharp_wrap_after_property_in_chained_method_calls = true
 
