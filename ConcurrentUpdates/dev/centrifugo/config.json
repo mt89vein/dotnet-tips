@@ -1,0 +1,31 @@
+{
+  "client": {
+    "token": {
+      "hmac_secret_key": "my_secret"
+    },
+    "allowed_origins": ["*"],
+    "proxy": {
+      "connect": {
+        "enabled": true,
+        "endpoint": "http://host.docker.internal:5261/centrifugo/connect"
+      }
+    }
+  },
+  "grpc_api": {
+    "enabled": true
+  },
+  "admin": {
+    "password": "password",
+    "secret": "secret",
+    "enabled": true
+  },
+  "channel": {
+    "namespaces": [
+      {
+        "presence": true,
+        "name": "products",
+        "allow_subscribe_for_client": true
+      }
+    ]
+  }
+}

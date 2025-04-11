@@ -335,3 +335,4 @@ tests/Sstv.Outbox.IntegrationTests/coverage.info
 # Unignore
 
 !/SyncDataBenchmark/artifacts/
+ConflictResolution/src/Frontend/.vscode
