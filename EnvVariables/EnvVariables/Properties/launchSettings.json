@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5206",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "REQUIRED_VARIABLE": "required variable value",
+        "NOT_REQUIRED_VARIABLE": "not required variable value",
+        "SOME_FEATURE_ENABLED": "true",
+        "FEATURE_VARIABLE": "feature var"
+      }
+    }
+  }
+}
