@@ -1,14 +1,24 @@
 ﻿namespace EnvVariables;
 
-public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
+public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider, IConfigurationSource
 {
     private readonly ILogger _logger;
-    private readonly IReadOnlyCollection<EnvVariable> _envVariables;
+    private readonly HashSet<EnvVariable> _envVariables;
 
-    public EnvSubstitutionConfigurationProvider(ILogger logger, IReadOnlyCollection<EnvVariable> envVariables)
+    public EnvSubstitutionConfigurationProvider(IReadOnlyCollection<EnvVariable> envVariables, ILogger logger)
     {
         _logger = logger;
-        _envVariables = envVariables;
+        _envVariables = new HashSet<EnvVariable>(envVariables);
+    }
+
+    public void Add(params EnvVariable[] envVariables)
+    {
+        foreach (var envVariable in envVariables)
+        {
+            _envVariables.Add(envVariable);
+        }
+        Load();
+        OnReload();
     }
 
     public override void Load()
@@ -35,36 +45,24 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
             Environment.Exit(1);
         }
     }
-}
 
-public sealed class EnvSubstitutionConfigurationSource : IConfigurationSource
-{
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly IReadOnlyCollection<EnvVariable> _mapping;
-
-    public EnvSubstitutionConfigurationSource(
-        ILoggerFactory loggerFactory,
-        IReadOnlyCollection<EnvVariable> mapping
-    )
+    public void PrintEnvs()
     {
-        _loggerFactory = loggerFactory;
-        _mapping = mapping;
+        _logger.LogInformation("Printing configured env variables:");
+
+        foreach (var envVariable in _envVariables)
+        {
+            _logger.LogInformation("{@EnvVariable}", envVariable);
+        }
+    }
+
+    public IReadOnlyCollection<EnvVariable> GetEnvs()
+    {
+        return _envVariables;
     }
 
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        return new EnvSubstitutionConfigurationProvider(_loggerFactory.CreateLogger<EnvSubstitutionConfigurationProvider>(), _mapping);
-    }
-
-    public void PrintEnvs()
-    {
-        var logger = _loggerFactory.CreateLogger<EnvSubstitutionConfigurationSource>();
-
-        logger.LogInformation("Printing configured env variables:");
-
-        foreach (var envVariable in _mapping)
-        {
-            logger.LogInformation("{@EnvVariable}", envVariable);
-        }
+        return this;
     }
 }

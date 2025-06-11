@@ -2,7 +2,7 @@
 
 public static class ConfigurationBuilderExtensions
 {
-    public static IConfigurationBuilder AddEnvSubstitution(
+    public static EnvSubstitutionConfigurationProvider AddEnvSubstitution(
         this IConfigurationBuilder builder,
         ILoggerFactory loggerFactory,
         params EnvVariable[] envVariables
@@ -11,7 +11,7 @@ public static class ConfigurationBuilderExtensions
         return builder.ConfigureCore(loggerFactory, envVariables);
     }
 
-    public static IConfigurationBuilder AddEnvSubstitution(
+    public static EnvSubstitutionConfigurationProvider AddEnvSubstitution(
         this IConfigurationBuilder builder,
         ILoggerFactory loggerFactory,
         IReadOnlyCollection<EnvVariable> envVariables
@@ -20,15 +20,15 @@ public static class ConfigurationBuilderExtensions
         return builder.ConfigureCore(loggerFactory, envVariables);
     }
 
-    private static IConfigurationBuilder ConfigureCore(
+    private static EnvSubstitutionConfigurationProvider ConfigureCore(
         this IConfigurationBuilder builder,
         ILoggerFactory loggerFactory,
         IReadOnlyCollection<EnvVariable> envVariables
     )
     {
-        var source = new EnvSubstitutionConfigurationSource(
-            loggerFactory,
-            envVariables
+        var source = new EnvSubstitutionConfigurationProvider(
+            envVariables,
+            loggerFactory.CreateLogger<EnvSubstitutionConfigurationProvider>()
         );
 
         var args = Environment.GetCommandLineArgs();
@@ -40,6 +40,8 @@ public static class ConfigurationBuilderExtensions
             Environment.Exit(0);
         }
 
-        return builder.Add(source);
+        builder.Add(source);
+
+        return source;
     }
 }

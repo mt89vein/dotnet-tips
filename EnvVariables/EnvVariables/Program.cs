@@ -33,15 +33,19 @@ try
         new OptionalVariable(name: "NOT_REQUIRED_VARIABLE", populateTo: ["top_level_value"])
     };
 
+    // we can dynamically add variables, that depends on some feature flags
     if (builder.Configuration.GetValue("SOME_FEATURE_ENABLED", true))
     {
         envs.Add(new RequiredVariable("FEATURE_VARIABLE", populateTo: ["some:feature:value"]));
     }
 
-    builder.Configuration.AddEnvSubstitution(
+    var source = builder.Configuration.AddEnvSubstitution(
         LoggerFactory.Create(o => o.AddSerilog(logger)),
         envs
     );
+
+    // also, we can add it later after registration
+    source.Add(new RequiredVariable("ONE_MORE_VARIABLE", populateTo: ["one:more:section:value"]));
 
     var app = builder.Build();
 
@@ -54,9 +58,13 @@ try
             config["top_level_value"],
             config["my:deep:section:additionalPropertyAlsoWorks"],
             config["my:additionalPropertyAlsoWorks"],
-            config["some:feature:value"]
+            config["some:feature:value"],
+            config["one:more:section:value"]
         });
     });
+
+    // easy to get configured variables
+    app.MapGet("/envs", () => source.GetEnvs());
 
     app.Run();
 }

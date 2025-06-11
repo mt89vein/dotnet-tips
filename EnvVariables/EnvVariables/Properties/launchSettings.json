@@ -11,7 +11,8 @@
         "REQUIRED_VARIABLE": "required variable value",
         "NOT_REQUIRED_VARIABLE": "not required variable value",
         "SOME_FEATURE_ENABLED": "true",
-        "FEATURE_VARIABLE": "feature var"
+        "FEATURE_VARIABLE": "feature var",
+        "ONE_MORE_VARIABLE": "ONE_MORE"
       }
     }
   }
