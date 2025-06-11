@@ -51,16 +51,27 @@ try
 
     app.MapGet("/", ([FromServices] IConfiguration config) =>
     {
-        return Results.Ok(new[]
+        var additionals = new[]
         {
-            config["my:deep:section:value"],
-            config["my:deep:anotherSection:value"],
-            config["top_level_value"],
-            config["my:deep:section:additionalPropertyAlsoWorks"],
-            config["my:additionalPropertyAlsoWorks"],
-            config["some:feature:value"],
-            config["one:more:section:value"]
-        });
+            "my:deep:section:additionalPropertyAlsoWorks",
+            "my:additionalPropertyAlsoWorks"
+        };
+
+        var result = new Dictionary<string, string?>();
+        foreach (var envVariable in source.GetEnvs())
+        {
+            foreach (var p in envVariable.PopulateTo)
+            {
+                result[p] = config[p] + $" -> [from env variable {envVariable.Name}]";
+            }
+        }
+
+        foreach (var additional in additionals)
+        {
+            result[additional] = config[additional];
+        }
+
+        return Results.Ok(result);
     });
 
     // easy to get configured variables
