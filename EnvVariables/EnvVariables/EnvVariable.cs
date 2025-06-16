@@ -4,12 +4,87 @@ namespace EnvVariables;
 
 public delegate bool EnvVariableValidation(string? value, [NotNullWhen(returnValue: false)] out string? errorMessage);
 
+public class EnvVariableBuilder
+{
+    private readonly string _name;
+    private string _description;
+    private HashSet<string>? _populateTo;
+    private bool _required;
+    private string? _defaultValue;
+
+    public EnvVariableBuilder(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(nameof(name));
+
+        _name = name;
+        _required = true;
+    }
+
+    public static EnvVariableBuilder Required(string name)
+    {
+        return new EnvVariableBuilder(name).AsRequired();
+    }
+
+    public static EnvVariableBuilder Optional(string name)
+    {
+        return new EnvVariableBuilder(name).AsOptional();
+    }
+
+    public EnvVariableBuilder WithDescription(string description)
+    {
+        _description = description;
+
+        return this;
+    }
+
+    public EnvVariableBuilder WithDefaultValue(string? defaultValue)
+    {
+        _defaultValue = defaultValue;
+
+        return this;
+    }
+
+    public EnvVariableBuilder WithPopulateTo(params string[] populateTo)
+    {
+        _populateTo = new HashSet<string>(populateTo);
+
+        return this;
+    }
+
+    public EnvVariableBuilder AsRequired()
+    {
+        _required = true;
+
+        return this;
+    }
+
+    public EnvVariableBuilder AsOptional()
+    {
+        _required = false;
+
+        return this;
+    }
+
+    public EnvVariable Build()
+    {
+        return new EnvVariable(_name, _description, _populateTo, _required, _defaultValue);
+    }
+
+    public static implicit operator EnvVariable(EnvVariableBuilder builder)
+    {
+        return builder.Build();
+    }
+}
+
+
 public class EnvVariable : IEquatable<EnvVariable>
 {
     private EnvVariableValidation _customValidation;
     private readonly HashSet<string> _populateTo;
 
     public string Name { get; }
+
+    public string? Description { get; }
 
     public IReadOnlyCollection<string> PopulateTo => _populateTo;
 
@@ -19,6 +94,7 @@ public class EnvVariable : IEquatable<EnvVariable>
 
     public EnvVariable(
         string name,
+        string? description = null,
         IReadOnlyCollection<string>? populateTo = null,
         bool required = true,
         string? defaultValue = null,
@@ -29,22 +105,13 @@ public class EnvVariable : IEquatable<EnvVariable>
 
         _populateTo = new HashSet<string>(populateTo ?? []);
         Name = name;
+        Description = description;
         Required = required;
         DefaultValue = defaultValue;
         _customValidation = customValidation ?? DefaultValidation;
     }
 
-    public static EnvVariable AsRequired(string name, string[]? populateTo = null, string? defaultValue = null)
-    {
-        return new EnvVariable(name, populateTo, required: true, defaultValue);
-    }
-
-    public static EnvVariable AsOptional(string name, string[]? populateTo = null, string? defaultValue = null)
-    {
-        return new EnvVariable(name, populateTo, required: false, defaultValue);
-    }
-
-    public void MergeWith(EnvVariable envVariable)
+    internal void MergeWith(EnvVariable envVariable)
     {
         if (this != envVariable)
         {

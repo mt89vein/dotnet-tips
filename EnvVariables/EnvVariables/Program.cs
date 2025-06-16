@@ -1,3 +1,4 @@
+using System.Text.Json;
 using EnvVariables;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -29,17 +30,21 @@ try
 
     var envs = new List<EnvVariable>
     {
-        EnvVariable.AsRequired(name: "REQUIRED_VARIABLE", populateTo: ["my:deep:section:value", "my:deep:anotherSection:value"]),
-        EnvVariable.AsOptional(name: "NOT_REQUIRED_VARIABLE", populateTo: ["top_level_value"])
+        EnvVariableBuilder.Required("REQUIRED_VARIABLE")
+            .WithDescription("Example of required variable")
+            .WithPopulateTo("my:deep:section:value", "my:deep:anotherSection:value"),
+        EnvVariableBuilder.Optional("NOT_REQUIRED_VARIABLE")
+            .WithDescription("Example of optional variable")
+            .WithPopulateTo("top_level_value"),
     };
 
     // we can dynamically add variables, that depends on some static feature flags
     if (string.Equals(Environment.GetEnvironmentVariable("SOME_STATIC_FEATURE_ENABLED"), bool.TrueString, StringComparison.OrdinalIgnoreCase))
     {
-        envs.Add(EnvVariable.AsRequired("STATIC_FEATURE_VARIABLE", populateTo: ["some:static_feature:value"]));
+        envs.Add(EnvVariableBuilder.Required("STATIC_FEATURE_VARIABLE").WithDescription("static env variable").WithPopulateTo("some:static_feature:value"));
 
         // we can add same variable multiple times and set different populateTo (they will be merged)
-        envs.Add(EnvVariable.AsRequired("STATIC_FEATURE_VARIABLE", populateTo: ["some:static_feature:value2"]));
+        envs.Add(EnvVariableBuilder.Required("STATIC_FEATURE_VARIABLE").WithDescription("static env variable").WithPopulateTo("some:static_feature:value2"));
     }
 
     var source = builder.Configuration.AddEnvSubstitution(
@@ -54,15 +59,19 @@ try
                     bool.TrueString,
                     StringComparison.OrdinalIgnoreCase))
             {
-                dynamicEnvs.Add(EnvVariable.AsRequired("DYNAMIC_FEATURE_VARIABLE",
-                    populateTo: ["some:dynamic_feature:value"]));
+
+                dynamicEnvs.Add(EnvVariableBuilder
+                    .Optional("DYNAMIC_FEATURE_VARIABLE")
+                    .WithDescription("Dynamic feature variable")
+                    .WithPopulateTo("some:dynamic_feature:value")
+                );
             }
 
             return dynamicEnvs;
         });
 
     // also, we can add it later after registration
-    source.Add(EnvVariable.AsRequired("ONE_MORE_VARIABLE", populateTo: ["one:more:section:value"]));
+    source.Add(EnvVariableBuilder.Required("ONE_MORE_VARIABLE").WithDescription("one more!").WithPopulateTo("one:more:section:value"));
 
     var app = builder.Build();
 
@@ -97,6 +106,20 @@ try
     if (args.Any(a => a.Equals("print-envs", StringComparison.OrdinalIgnoreCase)))
     {
         source.PrintEnvs();
+        Environment.Exit(0);
+    }
+
+    if (args.Any(a => a.Equals("save-envs", StringComparison.OrdinalIgnoreCase)))
+    {
+        var opt = new JsonSerializerOptions { WriteIndented = true };
+        await File.WriteAllBytesAsync(
+                "./envs.json",
+                JsonSerializer.SerializeToUtf8Bytes(
+                    source.GetAllVariables().OrderBy(x => x.Name),
+                    options: opt
+                )
+            );
+
         Environment.Exit(0);
     }
 
