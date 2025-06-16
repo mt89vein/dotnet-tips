@@ -29,14 +29,17 @@ try
 
     var envs = new List<EnvVariable>
     {
-        new RequiredVariable(name: "REQUIRED_VARIABLE", populateTo: ["my:deep:section:value", "my:deep:anotherSection:value"]),
-        new OptionalVariable(name: "NOT_REQUIRED_VARIABLE", populateTo: ["top_level_value"])
+        EnvVariable.AsRequired(name: "REQUIRED_VARIABLE", populateTo: ["my:deep:section:value", "my:deep:anotherSection:value"]),
+        EnvVariable.AsOptional(name: "NOT_REQUIRED_VARIABLE", populateTo: ["top_level_value"])
     };
 
     // we can dynamically add variables, that depends on some feature flags
     if (builder.Configuration.GetValue("SOME_FEATURE_ENABLED", true))
     {
-        envs.Add(new RequiredVariable("FEATURE_VARIABLE", populateTo: ["some:feature:value"]));
+        envs.Add(EnvVariable.AsRequired("FEATURE_VARIABLE", populateTo: ["some:feature:value"]));
+
+        // we can add same variable multiple times and set different populateTo (they will be merged)
+        envs.Add(EnvVariable.AsRequired("FEATURE_VARIABLE", populateTo: ["some:feature:value2"]));
     }
 
     var source = builder.Configuration.AddEnvSubstitution(
@@ -45,7 +48,7 @@ try
     );
 
     // also, we can add it later after registration
-    source.Add(new RequiredVariable("ONE_MORE_VARIABLE", populateTo: ["one:more:section:value"]));
+    source.Add(EnvVariable.AsRequired("ONE_MORE_VARIABLE", populateTo: ["one:more:section:value"]));
 
     var app = builder.Build();
 
@@ -58,7 +61,7 @@ try
         };
 
         var result = new Dictionary<string, string?>();
-        foreach (var envVariable in source.GetEnvs())
+        foreach (var envVariable in source.EnvVariables)
         {
             foreach (var p in envVariable.PopulateTo)
             {
@@ -75,7 +78,13 @@ try
     });
 
     // easy to get configured variables
-    app.MapGet("/envs", () => source.GetEnvs());
+    app.MapGet("/envs", () => source.EnvVariables);
+
+    if (args.Any(a => a.Equals("print-envs", StringComparison.OrdinalIgnoreCase)))
+    {
+        source.PrintEnvs();
+        Environment.Exit(0);
+    }
 
     app.Run();
 }

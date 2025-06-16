@@ -31,15 +31,6 @@ public static class ConfigurationBuilderExtensions
             loggerFactory.CreateLogger<EnvSubstitutionConfigurationProvider>()
         );
 
-        var args = Environment.GetCommandLineArgs();
-
-        if (args.Contains("print-envs"))
-        {
-            source.PrintEnvs();
-
-            Environment.Exit(0);
-        }
-
         builder.Add(source);
 
         return source;

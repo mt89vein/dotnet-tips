@@ -5,33 +5,35 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
     private readonly ILogger _logger;
     private readonly HashSet<EnvVariable> _envVariables;
 
+    public IReadOnlyCollection<EnvVariable> EnvVariables => _envVariables;
+
     public EnvSubstitutionConfigurationProvider(IReadOnlyCollection<EnvVariable> envVariables, ILogger logger)
     {
         _logger = logger;
-        _envVariables = new HashSet<EnvVariable>(envVariables);
+        _envVariables = new HashSet<EnvVariable>(envVariables.Count);
+
+        AddVariables(envVariables);
     }
 
     public void Add(params EnvVariable[] envVariables)
     {
-        foreach (var envVariable in envVariables)
-        {
-            _envVariables.Add(envVariable);
-        }
+        AddVariables(envVariables);
         Load();
         OnReload();
     }
 
     public override void Load()
     {
-        var hasErrors = false;
+        var errors = new List<string>();
+
         foreach (var envVariable in _envVariables)
         {
             var value = Environment.GetEnvironmentVariable(envVariable.Name) ?? envVariable.DefaultValue;
 
             if (!envVariable.Validate(value, out var errorMessage))
             {
-                _logger.LogCritical(errorMessage, envVariable.Name);
-                hasErrors = true;
+                _logger.LogCritical(errorMessage);
+                errors.Add(errorMessage);
             }
 
             foreach (var section in envVariable.PopulateTo)
@@ -40,29 +42,31 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
             }
         }
 
-        if (hasErrors)
+        if (errors.Count != 0)
         {
-            Environment.Exit(1);
+            throw new InvalidOperationException($"Environment variable validation failed: {string.Join("; ", errors)}");
         }
     }
 
     public void PrintEnvs()
     {
-        _logger.LogInformation("Printing configured env variables:");
-
-        foreach (var envVariable in _envVariables)
-        {
-            _logger.LogInformation("{@EnvVariable}", envVariable);
-        }
-    }
-
-    public IReadOnlyCollection<EnvVariable> GetEnvs()
-    {
-        return _envVariables;
+        _logger.LogInformation("{@EnvVariables}", _envVariables);
     }
 
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
         return this;
+    }
+
+    private void AddVariables(IReadOnlyCollection<EnvVariable> envVariables)
+    {
+        foreach (var envVariable in envVariables)
+        {
+            if (!_envVariables.Add(envVariable))
+            {
+                var env = _envVariables.Single(x => x == envVariable);
+                env.MergeWith(envVariable);
+            }
+        }
     }
 }
