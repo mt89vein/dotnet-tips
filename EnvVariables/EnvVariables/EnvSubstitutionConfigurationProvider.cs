@@ -4,11 +4,15 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
 {
     private readonly ILogger _logger;
     private readonly HashSet<EnvVariable> _envVariables;
+    private readonly Func<IEnumerable<EnvVariable>>? _dynamicVariables;
 
-    public IReadOnlyCollection<EnvVariable> EnvVariables => _envVariables;
-
-    public EnvSubstitutionConfigurationProvider(IReadOnlyCollection<EnvVariable> envVariables, ILogger logger)
+    public EnvSubstitutionConfigurationProvider(
+        IReadOnlyCollection<EnvVariable> envVariables,
+        ILogger logger,
+        Func<IEnumerable<EnvVariable>>? dynamicVariables = null
+    )
     {
+        _dynamicVariables = dynamicVariables;
         _logger = logger;
         _envVariables = new HashSet<EnvVariable>(envVariables.Count);
 
@@ -26,7 +30,7 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
     {
         var errors = new List<string>();
 
-        foreach (var envVariable in _envVariables)
+        foreach (var envVariable in GetAllVariables())
         {
             var value = Environment.GetEnvironmentVariable(envVariable.Name) ?? envVariable.DefaultValue;
 
@@ -48,9 +52,14 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
         }
     }
 
+    public IEnumerable<EnvVariable> GetAllVariables()
+    {
+        return _envVariables.Concat(_dynamicVariables?.Invoke() ?? []);
+    }
+
     public void PrintEnvs()
     {
-        _logger.LogInformation("{@EnvVariables}", _envVariables);
+        _logger.LogInformation("{@EnvVariables}", GetAllVariables());
     }
 
     public IConfigurationProvider Build(IConfigurationBuilder builder)

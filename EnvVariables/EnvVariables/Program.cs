@@ -33,19 +33,33 @@ try
         EnvVariable.AsOptional(name: "NOT_REQUIRED_VARIABLE", populateTo: ["top_level_value"])
     };
 
-    // we can dynamically add variables, that depends on some feature flags
-    if (builder.Configuration.GetValue("SOME_FEATURE_ENABLED", true))
+    // we can dynamically add variables, that depends on some static feature flags
+    if (string.Equals(Environment.GetEnvironmentVariable("SOME_STATIC_FEATURE_ENABLED"), bool.TrueString, StringComparison.OrdinalIgnoreCase))
     {
-        envs.Add(EnvVariable.AsRequired("FEATURE_VARIABLE", populateTo: ["some:feature:value"]));
+        envs.Add(EnvVariable.AsRequired("STATIC_FEATURE_VARIABLE", populateTo: ["some:static_feature:value"]));
 
         // we can add same variable multiple times and set different populateTo (they will be merged)
-        envs.Add(EnvVariable.AsRequired("FEATURE_VARIABLE", populateTo: ["some:feature:value2"]));
+        envs.Add(EnvVariable.AsRequired("STATIC_FEATURE_VARIABLE", populateTo: ["some:static_feature:value2"]));
     }
 
     var source = builder.Configuration.AddEnvSubstitution(
         LoggerFactory.Create(o => o.AddSerilog(logger)),
-        envs
-    );
+        envs,
+        dynamicVariables: () =>
+        {
+            var dynamicEnvs = new List<EnvVariable>();
+
+            // imagine here your dynamic feature flag check
+            if (string.Equals(Environment.GetEnvironmentVariable("SOME_DYNAMIC_FEATURE_ENABLED"),
+                    bool.TrueString,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                dynamicEnvs.Add(EnvVariable.AsRequired("DYNAMIC_FEATURE_VARIABLE",
+                    populateTo: ["some:dynamic_feature:value"]));
+            }
+
+            return dynamicEnvs;
+        });
 
     // also, we can add it later after registration
     source.Add(EnvVariable.AsRequired("ONE_MORE_VARIABLE", populateTo: ["one:more:section:value"]));
@@ -61,7 +75,7 @@ try
         };
 
         var result = new Dictionary<string, string?>();
-        foreach (var envVariable in source.EnvVariables)
+        foreach (var envVariable in source.GetAllVariables())
         {
             foreach (var p in envVariable.PopulateTo)
             {
@@ -78,7 +92,7 @@ try
     });
 
     // easy to get configured variables
-    app.MapGet("/envs", () => source.EnvVariables);
+    app.MapGet("/envs", () => source.GetAllVariables());
 
     if (args.Any(a => a.Equals("print-envs", StringComparison.OrdinalIgnoreCase)))
     {

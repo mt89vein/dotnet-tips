@@ -10,9 +10,11 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "REQUIRED_VARIABLE": "required variable value",
         "NOT_REQUIRED_VARIABLE": "not required variable value",
-        "SOME_FEATURE_ENABLED": "true",
-        "FEATURE_VARIABLE": "feature var",
-        "ONE_MORE_VARIABLE": "ONE_MORE"
+        "SOME_STATIC_FEATURE_ENABLED": "true",
+        "STATIC_FEATURE_VARIABLE": "feature var",
+        "ONE_MORE_VARIABLE": "ONE_MORE",
+        "SOME_DYNAMIC_FEATURE_ENABLED": "true",
+        "DYNAMIC_FEATURE_VARIABLE": "dynamic variable"
       }
     }
   }
