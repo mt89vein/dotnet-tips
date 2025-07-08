@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5206",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "REQUIRED_VARIABLE": "required variable value",
+        "NOT_REQUIRED_VARIABLE": "not required variable value",
+        "SOME_STATIC_FEATURE_ENABLED": "true",
+        "STATIC_FEATURE_VARIABLE": "feature var",
+        "ONE_MORE_VARIABLE": "ONE_MORE",
+        "SOME_DYNAMIC_FEATURE_ENABLED": "true",
+        "DYNAMIC_FEATURE_VARIABLE": "dynamic variable"
+      }
+    }
+  }
+}

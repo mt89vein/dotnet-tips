@@ -1,0 +1,49 @@
+[
+  {
+    "Name": "REQUIRED_VARIABLE",
+    "Description": "Example of required variable",
+    "PopulateTo": [
+      "my:deep:section:value",
+      "my:deep:anotherSection:value"
+    ],
+    "Required": true,
+    "DefaultValue": null
+  },
+  {
+    "Name": "NOT_REQUIRED_VARIABLE",
+    "Description": "Example of optional variable",
+    "PopulateTo": [
+      "top_level_value"
+    ],
+    "Required": false,
+    "DefaultValue": null
+  },
+  {
+    "Name": "STATIC_FEATURE_VARIABLE",
+    "Description": "static env variable",
+    "PopulateTo": [
+      "some:static_feature:value",
+      "some:static_feature:value2"
+    ],
+    "Required": true,
+    "DefaultValue": null
+  },
+  {
+    "Name": "ONE_MORE_VARIABLE",
+    "Description": "one more!",
+    "PopulateTo": [
+      "one:more:section:value"
+    ],
+    "Required": true,
+    "DefaultValue": null
+  },
+  {
+    "Name": "DYNAMIC_FEATURE_VARIABLE",
+    "Description": "Dynamic feature variable",
+    "PopulateTo": [
+      "some:dynamic_feature:value"
+    ],
+    "Required": false,
+    "DefaultValue": null
+  }
+]
