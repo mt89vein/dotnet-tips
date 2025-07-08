@@ -2,6 +2,7 @@ using System.Text.Json;
 using EnvVariables;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Serilog.Context;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 
@@ -19,36 +20,49 @@ try
     builder.Logging.ClearProviders();
 
     var logger = new LoggerConfiguration()
-        .MinimumLevel.Is(LogEventLevel.Information)
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-        .Enrich.FromLogContext()
-        .WriteTo.Console(new JsonFormatter())
-        .ReadFrom.Configuration(builder.Configuration)
+        .MinimumLevel
+        .Is(LogEventLevel.Information)
+        .MinimumLevel
+        .Override("Microsoft", LogEventLevel.Information)
+        .Enrich
+        .FromLogContext()
+        .WriteTo
+        .Console(new JsonFormatter())
+        .ReadFrom
+        .Configuration(builder.Configuration)
         .CreateLogger();
 
     builder.Logging.AddSerilog(logger);
 
     var envs = new List<EnvVariable>
     {
-        EnvVariableBuilder.Required("REQUIRED_VARIABLE")
+        EnvVariableBuilder
+            .Required("REQUIRED_VARIABLE")
             .WithDescription("Example of required variable")
             .WithPopulateTo("my:deep:section:value", "my:deep:anotherSection:value"),
-        EnvVariableBuilder.Optional("NOT_REQUIRED_VARIABLE")
+        EnvVariableBuilder
+            .Optional("NOT_REQUIRED_VARIABLE")
             .WithDescription("Example of optional variable")
             .WithPopulateTo("top_level_value"),
     };
 
     // we can dynamically add variables, that depends on some static feature flags
-    if (string.Equals(Environment.GetEnvironmentVariable("SOME_STATIC_FEATURE_ENABLED"), bool.TrueString, StringComparison.OrdinalIgnoreCase))
+    if (string.Equals(Environment.GetEnvironmentVariable("SOME_STATIC_FEATURE_ENABLED"), bool.TrueString,
+            StringComparison.OrdinalIgnoreCase))
     {
-        envs.Add(EnvVariableBuilder.Required("STATIC_FEATURE_VARIABLE").WithDescription("static env variable").WithPopulateTo("some:static_feature:value"));
+        envs.Add(EnvVariableBuilder
+            .Required("STATIC_FEATURE_VARIABLE")
+            .WithDescription("static env variable")
+            .WithPopulateTo("some:static_feature:value"));
 
         // we can add same variable multiple times and set different populateTo (they will be merged)
-        envs.Add(EnvVariableBuilder.Required("STATIC_FEATURE_VARIABLE").WithDescription("static env variable").WithPopulateTo("some:static_feature:value2"));
+        envs.Add(EnvVariableBuilder
+            .Required("STATIC_FEATURE_VARIABLE")
+            .WithDescription("static env variable")
+            .WithPopulateTo("some:static_feature:value2"));
     }
 
-    var source = builder.Configuration.AddEnvSubstitution(
-        LoggerFactory.Create(o => o.AddSerilog(logger)),
+    var envVariablesProvider = builder.Configuration.AddEnvVariables(
         envs,
         dynamicVariables: () =>
         {
@@ -71,7 +85,12 @@ try
         });
 
     // also, we can add it later after registration
-    source.Add(EnvVariableBuilder.Required("ONE_MORE_VARIABLE").WithDescription("one more!").WithPopulateTo("one:more:section:value"));
+    envVariablesProvider.Add([
+        EnvVariableBuilder
+            .Required("ONE_MORE_VARIABLE")
+            .WithDescription("one more!")
+            .WithPopulateTo("one:more:section:value")
+    ]);
 
     var app = builder.Build();
 
@@ -84,7 +103,7 @@ try
         };
 
         var result = new Dictionary<string, string?>();
-        foreach (var envVariable in source.GetAllVariables())
+        foreach (var envVariable in envVariablesProvider.GetAll())
         {
             foreach (var p in envVariable.PopulateTo)
             {
@@ -101,33 +120,49 @@ try
     });
 
     // easy to get configured variables
-    app.MapGet("/envs", () => source.GetAllVariables());
+    app.MapGet("/envs", () => envVariablesProvider.GetAll());
 
+    // for print envs to logs via dotnet run -- print-envs
     if (args.Any(a => a.Equals("print-envs", StringComparison.OrdinalIgnoreCase)))
     {
-        source.PrintEnvs();
-        Environment.Exit(0);
+        foreach (var envVariable in envVariablesProvider.GetAll())
+        {
+            app.Logger.LogInformation("@{EnvVariable}", envVariable);
+        }
+
+        return 0;
     }
 
+    // for save envs to file via dotnet run -- save-envs
     if (args.Any(a => a.Equals("save-envs", StringComparison.OrdinalIgnoreCase)))
     {
         var opt = new JsonSerializerOptions { WriteIndented = true };
         await File.WriteAllBytesAsync(
-                "./envs.json",
-                JsonSerializer.SerializeToUtf8Bytes(
-                    source.GetAllVariables().OrderBy(x => x.Name),
-                    options: opt
-                )
-            );
+            "./envs.json",
+            JsonSerializer.SerializeToUtf8Bytes(
+                envVariablesProvider.GetAll().OrderBy(x => x.Name),
+                options: opt
+            )
+        );
 
-        Environment.Exit(0);
+        return 0;
     }
 
     app.Run();
+
+    return 0;
+}
+catch (InvalidEnvVariablesException e)
+{
+    Log.Fatal("Failed to start app. {Message} [{Errors}]", e.Message, e.Errors);
+
+    return 1;
 }
 catch (Exception e)
 {
     Log.Fatal(e, "Application terminated unexpectedly");
+
+    return 1;
 }
 finally
 {

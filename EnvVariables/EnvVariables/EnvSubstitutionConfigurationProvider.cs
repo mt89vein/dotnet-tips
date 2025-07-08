@@ -1,26 +1,25 @@
 ﻿namespace EnvVariables;
 
-public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider, IConfigurationSource
+internal sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider, IConfigurationSource, IEnvVariablesProvider
 {
-    private readonly ILogger _logger;
     private readonly HashSet<EnvVariable> _envVariables;
     private readonly Func<IEnumerable<EnvVariable>>? _dynamicVariables;
 
     public EnvSubstitutionConfigurationProvider(
         IReadOnlyCollection<EnvVariable> envVariables,
-        ILogger logger,
         Func<IEnumerable<EnvVariable>>? dynamicVariables = null
     )
     {
         _dynamicVariables = dynamicVariables;
-        _logger = logger;
-        _envVariables = new HashSet<EnvVariable>(envVariables.Count);
+        _envVariables = new HashSet<EnvVariable>(envVariables.Count, EnvVariable.NameComparer);
 
         AddVariables(envVariables);
     }
 
-    public void Add(params EnvVariable[] envVariables)
+    public void Add(IReadOnlyCollection<EnvVariable> envVariables)
     {
+        ArgumentNullException.ThrowIfNull(envVariables);
+
         AddVariables(envVariables);
         Load();
         OnReload();
@@ -28,16 +27,22 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
 
     public override void Load()
     {
-        var errors = new List<string>();
+        var errors = new Dictionary<string, string>();
 
-        foreach (var envVariable in GetAllVariables())
+        foreach (var envVariable in GetAll())
         {
             var value = Environment.GetEnvironmentVariable(envVariable.Name) ?? envVariable.DefaultValue;
 
-            if (!envVariable.Validate(value, out var errorMessage))
+            try
             {
-                _logger.LogCritical(errorMessage);
-                errors.Add(errorMessage);
+                if (!envVariable.Validate(value, out var errorMessage))
+                {
+                    errors.TryAdd(envVariable.Name, errorMessage);
+                }
+            }
+            catch (Exception e)
+            {
+                errors.TryAdd(envVariable.Name, "Failed to validate environment variable: " + e.Message);
             }
 
             foreach (var section in envVariable.PopulateTo)
@@ -48,18 +53,13 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
 
         if (errors.Count != 0)
         {
-            throw new InvalidOperationException($"Environment variable validation failed: {string.Join("; ", errors)}");
+            throw new InvalidEnvVariablesException("Found errors in environment variables", errors);
         }
     }
 
-    public IEnumerable<EnvVariable> GetAllVariables()
+    public IEnumerable<EnvVariable> GetAll()
     {
         return _envVariables.Concat(_dynamicVariables?.Invoke() ?? []);
-    }
-
-    public void PrintEnvs()
-    {
-        _logger.LogInformation("{@EnvVariables}", GetAllVariables());
     }
 
     public IConfigurationProvider Build(IConfigurationBuilder builder)
@@ -73,7 +73,7 @@ public sealed class EnvSubstitutionConfigurationProvider : ConfigurationProvider
         {
             if (!_envVariables.Add(envVariable))
             {
-                var env = _envVariables.Single(x => x == envVariable);
+                var env = _envVariables.Single(x => EnvVariable.NameComparer.Equals(x, envVariable));
                 env.MergeWith(envVariable);
             }
         }
